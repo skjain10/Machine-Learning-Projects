@@ -1,0 +1,241 @@
+---
+title: "IST_707_Assignment2"
+output: html_document
+---
+
+# SHWET JAIN
+# IST 707
+
+#Read the dataset into a variable "essay" and have a glimse of it
+```{r}
+essay <- read.csv("Disputed_Essay_data.csv",sep=",",header=TRUE,stringsAsFactors = FALSE)
+head(essay,5)
+```
+
+```{r}
+#Remove NA's if present
+essay <- na.omit(essay)
+```
+
+##Installation of all the necessary libraries
+```{r}
+library(factoextra)
+library(tidyverse)
+library(e1071)
+library(cluster)
+library(dendextend)
+```
+
+
+##Removing all the records which has "Jay" as the author of the essay from the dataset 
+```{r}
+essayHM_clu <- essay[essay$author!='Jay',]
+essayHM <- essay[essay$author!='Jay',]
+```
+##Removing the unwanted columns and making sure 'essayHM' is ready for clustering (To find positions of Hamilton and Maddisons essay)
+```{r}
+essayHM <- essayHM[,-1:-2]  
+```
+
+#Removing all the records which has "Jay" and "HM" as the author of the essay from the dataset
+```{r}
+essay <- essay[essay$author!='Jay',]
+essay <- essay[essay$author!='HM',]
+```
+##Removing author and filename to make sure there are only numerical-based attributes so as to perform clustering
+```{r}
+km_essay <- essay[,-1:-2]
+head(km_essay,5)
+```
+
+##Testing the elbow method to determine the optimal no. of K. 
+```{r}
+set.seed(8)
+wss <- function(k){
+  return(kmeans(km_essay, k, nstart = 25)$tot.withinss)
+}
+
+k_values <- 1:10
+wss_values <- map_dbl(k_values, wss)
+plot(x = k_values, y = wss_values, 
+     type = "b", frame = F,
+     xlab = "Number of clusters K",
+     ylab = "Total within-clusters sum of square")
+```
+## Infered that optimal no. of K is 2
+
+##Running the k-means algorithm with k=2
+```{r}
+km_output <- kmeans(km_essay, centers = 2, nstart = 25, iter.max = 100, algorithm = "Hartigan-Wong")
+```
+##Copying the entire "km_output$cluster" vector into a new column in "essay" dataset
+```{r}
+essay$clusters <- km_output$cluster
+```
+##Output of the result
+```{r}
+fviz_cluster(km_output, data = km_essay)
+```
+## To analyze the clustering results more specifically "disputed" essay 
+```{r}
+table(essay$author,essay$clusters)
+```
+## This doesn't give us some solid inference about disputed essays. Hence, let's try it with K=3. 
+
+##Running the k-means algorithm again with k=3 and repeating the above steps
+```{r}
+km_output <- kmeans(km_essay, centers = 3, nstart = 25, iter.max = 100, algorithm = "Hartigan-Wong")
+essay$clusters <- km_output$cluster
+fviz_cluster(km_output, data = km_essay)
+```
+## To analyze the clustering results more specifically "disputed" essay 
+
+```{r}
+table(essay$author,essay$clusters)
+```
+## This doesn't give us some solid inference about disputed essays. Hence, let's try it with K=4.
+
+##Running the k-means algorithm again with k=4 and repeating the above steps with plotting the distance matrix. 
+```{r}
+km_output <- kmeans(km_essay, centers = 4, nstart = 25, iter.max = 100, algorithm = "Hartigan-Wong")
+distance <- get_dist(km_essay)
+fviz_dist(distance, gradient = list(low = "#00AFBB", mid = "white", high = "#FC4E07"))
+```
+
+## To analyze the clustering results more specifically "disputed" essay 
+```{r}
+essay$clusters <- km_output$cluster
+fviz_cluster(km_output, data = km_essay)
+```
+## To analyze the clustering results more specifically "disputed" essay 
+
+```{r}
+table(essay$author,essay$clusters)
+```
+
+## Now you can say that the clusters which consist of Hamilton doesn't have any of the disputed essays. On the other hand, cluster which consist of Madison does have disputed essays. Hence, we can say that these disputed essays were written by Madison and not Hamilton.
+
+
+## To find the positions of the essays written by Hamilton and Madinson
+```{r}
+km_outputHM <- kmeans(essayHM, centers = 4, nstart = 25, iter.max = 100, algorithm = "Hartigan-Wong")
+essayHM_clu$clusters123 <-  km_outputHM$cluster
+fviz_cluster(km_outputHM, data = essayHM)
+```
+
+```{r}
+table(essayHM_clu$author,essayHM_clu$clusters)
+```
+##As you can see from the output of the clusters and the table, all the three essays written by Hamilton and Madinson lie in the cluster which has Madinson's essay (You can conclude that majority of the co-authored essay was written by Madinson)
+
+
+
+#Clustering using HAC (Dendogram)
+```{r}
+hac_output <- as.dendrogram(hclust(dist(essay[,-1:-2], method = "euclidean"), method = "complete"))
+labels(hac_output)<-essay[,1][order.dendrogram(hac_output)]
+plot(hac_output, main="Dendogram using HAC algorithm",xlab = "Author", ylab = "Euclidean Distance",cex=0.05)
+```
+#As you can see all the disputed essay's are paired with Madison's (Except one which was written by Hamilton), which means they have most similarity. 
+
+##Installing all the necessary libraries for decision-tree (Classification) algorithm
+```{r}
+
+library(reprex)
+library(caret)
+library(rpart)
+```
+
+##Seperating the dataset into training and testing
+```{r}
+traindata <- essay[(essay$author!="dispt"),]
+testdata <- essay[(essay$author=="dispt"),]
+data <- rbind(traindata, testdata)
+head(data,5)
+tail(data,5)
+```
+
+
+##Default training of the model (Default Parameters)
+```{r}
+dt_model <- train(author ~ ., data = traindata[,-2], metric = "Accuracy", method = "rpart")
+print(dt_model)
+print(dt_model$finalModel)
+```
+## 
+```{r}
+dt_predict <- predict(dt_model, newdata = testdata[,-2] , na.action = na.omit, type = "prob")
+dt_predict 
+```
+
+
+```{r}
+dt_predict2 <- predict(dt_model, newdata = testdata[,-2], type = "raw")
+head(dt_predict2,11)
+```
+
+```{r}
+dt_model_preprune <- train(author ~ ., data = traindata[,-2], method = "rpart",
+                           metric = "Accuracy",
+                           tuneLength = 8,
+                           control = rpart.control(minsplit = 30, minbucket= 20, maxdepth = 5))
+
+print(dt_model_preprune$finalModel)
+```
+## As you can see from the above model, 5 errors currently.
+## Trying to change the parameters, minbucket being 20 it's trying to accomodate 20 values in the leaf node. Let's try reducing the value of minbucket.  
+  
+
+```{r}
+dt_predict <- predict(dt_model_preprune, newdata = testdata[,-2] , na.action = na.omit, type = "prob")
+dt_predict 
+
+```
+
+##Reducing the value of minbucket to 10, let's check the accuracy
+```{r}
+dt_model_preprune <- train(author ~ ., data = traindata[,-2], method = "rpart",
+                           metric = "Accuracy",
+                           tuneLength = 8,
+                           control = rpart.control(minsplit = 50, minbucket = 10, maxdepth = 5))
+print(dt_model_preprune$finalModel)
+```
+##Error is 1. (This is a better model and hence let's test our test data on this model)         
+          
+```{r}
+dt_predict <- predict(dt_model_preprune, newdata = testdata[,-2] , na.action = na.omit, type = "prob")
+dt_predict1 <- predict(dt_model_preprune, newdata = testdata[,-2], na.action = na.omit )
+dt_predict 
+```          
+##The model predicts that all the disputed essays are written by Madison. 
+  
+```{r}  
+dt_model_new <- train(author ~ ., data = traindata[,-2] , method = "rpart")
+dt_pred <- predict(dt_model_new, newdata =testdata[,-2])
+dt_pred
+testdata$author1 <- c("Madison","Madison","Madison","Madison","Madison","Madison","Madison","Madison","Madison","Madison","Hamilton")
+testdata$author1 <- as.factor(testdata$author1)
+confusionMatrix(dt_pred, testdata$author1)
+
+```                        
+## Evaluated the model and found that the model has good accuracy. 
+
+##Using the rattle library to output a fancy looking Decision Tree. 
+
+```{r}
+library(rattle)
+fancyRpartPlot(dt_model$finalModel)
+```
+
+
+```{r}
+library(rpart.plot)
+prp(dt_model$finalModel)
+```
+
+
+
+##My Conclusion
+##The results were similar to that of K-means clustering (11 disputed essays were written by Madison) 
+## However, the results of HAC were different and I think more accurate saying 10 were written by Madison and 1 by Hamilton. 
+
