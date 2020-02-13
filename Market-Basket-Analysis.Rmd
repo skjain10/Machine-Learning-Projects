@@ -1,0 +1,376 @@
+---
+title: "Shwet_DA"
+output: html_document
+---
+
+#Shwet Jain
+#SU ID: 368595022
+#NET ID: skjain
+#Assignment 1 
+
+
+###Reading the dataset into the "emp" variable, declaring it as a dataframe and studying the data
+```{r}
+emp <- read.csv("employee_attrition.csv",sep="," ,header=TRUE,stringsAsFactors = FALSE)
+emp <- data.frame(emp)
+str(emp)
+```
+### Deleting some rows which don't add value to the Apriori Algorithm.
+
+```{r}
+del <- c(9,10,27,22) 
+emp <- emp[,-del]
+```
+
+###Checking for NA values 
+```{r}
+sum(is.na(emp))
+
+```
+
+##Removing the 9 records that contain NA values and storing the dataframe in the new variable named   "clean_emp"
+```{r}
+clean_emp <- na.omit(emp)
+```
+
+###Deleting some rows which don't add value to the Apriori Algorithm.
+```{r}
+
+del1 <- c(13,19,21,24,25,26,28,29,30,31)
+clean_emp <- clean_emp[,-del1]
+```
+
+###To check NA value doesn't exists
+```{r}
+sum(is.na(clean_emp))
+```
+
+#Descriptive Statistics 
+##To study each and every variable's distribution 
+
+###Boxplot Distribution of DailyRate to convert into a categorical variable 
+
+```{r}
+boxplot(clean_emp$DailyRate)
+```
+
+
+### Summary of DistanceFromHome to get an idea of the distribution. 
+
+```{r}
+summary(clean_emp$DistanceFromHome)
+```
+
+
+### Scatter Plot of Age to get an idea of the distribution.   
+
+```{r}
+plot(clean_emp$Age)
+```
+
+### Histogram of Education of Employees 
+
+```{r}
+hist(clean_emp$Education)
+```
+
+### Histogram of Environment Satisfaction to study the variable. 
+
+```{r}
+hist(clean_emp$EnvironmentSatisfaction) 
+```
+
+### Histogram of JobInvolvement to convert into a categorical variable 
+
+```{r}
+hist(clean_emp$JobInvolvement)
+```
+
+
+### Plotting Job Satisfaction  
+
+```{r}
+hist(clean_emp$JobSatisfaction)
+```
+
+### Summary of MonthlyIncome  
+
+```{r}
+summary(clean_emp$MonthlyIncome)
+```
+
+
+### Boxplot Distribution of MonthlyRate to convert into a categorical variable 
+
+```{r}
+boxplot(clean_emp$MonthlyRate)
+```
+
+
+### Histogram Distribution of WorkLifeBalance variable to convert into a categorical variable 
+
+```{r}
+boxplot(clean_emp$WorkLifeBalance)
+```
+
+#Data Pre-processing
+##Making sure that the data is good to go for Apriori algorithm.
+
+### Converting Education to a categorical variable
+
+```{r}
+giveLevel<-function(x)
+{
+  BucketsClean <- replicate(length(x),"Doctor")
+  BucketsClean[x==1] <- "Below College"
+  BucketsClean[x==2] <- "College"
+  BucketsClean[x==3] <- "Bachelor"
+  BucketsClean[x==4] <- "Master"
+  return (BucketsClean)
+}
+clean_emp$Education <- giveLevel(clean_emp$Education)
+```
+
+### Converting JobSatisfaction, RelationshipSatisfaction, JobInvolvement, Environment Satisfaction variable into categorical variables.
+
+```{r}
+giveLevel1<-function(x)
+{
+  BucketsClean <- replicate(length(x),"Low")
+  BucketsClean[x==2] <- "Medium"
+  BucketsClean[x==3] <- "High"
+  BucketsClean[x==4] <- "Very High"
+  return (BucketsClean)
+}
+
+clean_emp$JobSatisfaction <- giveLevel1(clean_emp$JobSatisfaction)
+clean_emp$RelationshipSatisfaction <- giveLevel1(clean_emp$RelationshipSatisfaction)
+clean_emp$JobInvolvement <- giveLevel1(clean_emp$JobInvolvement)
+clean_emp$EnvironmentSatisfaction <- giveLevel1(clean_emp$EnvironmentSatisfaction)
+```
+
+### Converting Age into a categorical variable.
+
+```{r}
+giveLevel2<-function(x)
+{
+  BucketsClean <- replicate(length(x),"Seniors")
+  BucketsClean[x>18 & x<38] <- "Young"
+  BucketsClean[x>37 & x<54] <- "Adults"
+ 
+  return (BucketsClean)
+}
+clean_emp$Age <- giveLevel2(clean_emp$Age)
+```
+
+### Converting Daily Rate into a categorical variable
+```{r}
+giveLevel3<-function(x)
+{
+  BucketsClean <- replicate(length(x),"Low")
+  BucketsClean[x>=500 & x<=1100] <- "Medium"
+  BucketsClean[x>1100] <- "High"
+  return (BucketsClean)
+}
+clean_emp$DailyRate <- giveLevel3(clean_emp$DailyRate)
+```
+
+### Converting Distance From Home into a categorical variable
+```{r}
+giveLevel4<-function(x)
+{
+  BucketsClean <- replicate(length(x),"Near")
+  BucketsClean[x>=12 & x<=18] <- "Average"
+  BucketsClean[x>=18] <- "Far"
+  return (BucketsClean)
+}
+clean_emp$DistanceFromHome <- giveLevel4(clean_emp$DistanceFromHome)
+```
+
+### Converting Performance Rating into a categorical variable
+
+```{r}
+giveLevel5<-function(x)
+{
+  BucketsClean <- replicate(length(x),"Outstanding")
+  BucketsClean[x==1] <- "Low"
+  BucketsClean[x==2] <- "Good"
+  BucketsClean[x==3] <- "Excellent"
+  return (BucketsClean)
+}
+clean_emp$PerformanceRating <- giveLevel5(clean_emp$PerformanceRating)
+```
+
+##Converting WorkLifeBalance into a categorical variable
+
+```{r}
+giveLevel6<-function(x)
+{
+  BucketsClean <- replicate(length(x),"Very High")
+  BucketsClean[x==1] <- "Bad"
+  BucketsClean[x==2] <- "Medium"
+  BucketsClean[x==3] <- "High"
+  return (BucketsClean)
+}
+clean_emp$WorkLifeBalance <- giveLevel6(clean_emp$WorkLifeBalance)
+```
+
+##Converting Hourly Rate variable into a categorical variable
+
+```{r}
+giveLevel7<-function(x)
+{
+  BucketsClean <- replicate(length(x),"High")
+  BucketsClean[x<50] <- "Low"
+  BucketsClean[x>50 & x<80] <- "Average"
+  return (BucketsClean)
+}
+clean_emp$HourlyRate <- giveLevel7(clean_emp$HourlyRate)
+```
+
+###onverting Monthly Rate variable into a categorical variable
+
+```{r}
+giveLevel8<-function(x)
+{
+  BucketsClean <- replicate(length(x),"High")
+  BucketsClean[x<10000] <- "Low"
+  BucketsClean[x>10000 & x<20000] <- "Average"
+  return (BucketsClean)
+}
+clean_emp$MonthlyRate <- giveLevel8(clean_emp$MonthlyRate)
+```
+
+###Converting Monthly Income to a categorical variable
+
+```{r}
+giveLevel9<-function(x)
+{
+  BucketsClean <- replicate(length(x),"High")
+  BucketsClean[x<3000] <- "Low"
+  BucketsClean[x>3000 & x<7000] <- "Average"
+  return (BucketsClean)
+}
+clean_emp$MonthlyIncome <- giveLevel9(clean_emp$MonthlyIncome) 
+```
+
+##Converting all the varibale into Factors so as to run the Apriori model 
+ 
+```{r}    
+clean_emp$Age <- as.factor(clean_emp$Age)
+clean_emp$Attrition <- as.factor(clean_emp$Attrition)
+clean_emp$BusinessTravel <- as.factor(clean_emp$BusinessTravel)
+clean_emp$DailyRate <- as.factor(clean_emp$DailyRate)
+clean_emp$Department <- as.factor(clean_emp$Department)
+clean_emp$DistanceFromHome <- as.factor(clean_emp$DistanceFromHome)
+clean_emp$Education <- as.factor(clean_emp$Education)              
+clean_emp$EducationField <- as.factor(clean_emp$EducationField)     
+clean_emp$EnvironmentSatisfaction <- as.factor(clean_emp$EnvironmentSatisfaction)
+clean_emp$Gender <- as.factor(clean_emp$Gender)        
+clean_emp$HourlyRate <- as.factor(clean_emp$HourlyRate)           
+clean_emp$JobInvolvement <- as.factor(clean_emp$JobInvolvement)     
+clean_emp$JobRole <- as.factor(clean_emp$JobRole)           
+clean_emp$JobSatisfaction <- as.factor(clean_emp$JobSatisfaction)       
+clean_emp$MaritalStatus <- as.factor(clean_emp$MaritalStatus)   
+clean_emp$MonthlyIncome <- as.factor(clean_emp$MonthlyIncome)         
+clean_emp$MonthlyRate <- as.factor(clean_emp$MonthlyRate)         
+clean_emp$OverTime <- as.factor(clean_emp$OverTime)
+clean_emp$PerformanceRating <- as.factor(clean_emp$PerformanceRating)
+clean_emp$RelationshipSatisfaction <- as.factor(clean_emp$RelationshipSatisfaction)
+clean_emp$WorkLifeBalance <- as.factor(clean_emp$WorkLifeBalance)
+```
+
+
+### Checking whether all the variables are converted to factors
+```{r}
+str(clean_emp)
+```
+
+### Installing packages and libraries for apriori algorithm
+```{r}
+
+library(arules)
+
+
+library(arulesViz)
+```
+
+
+### Running the Default algorithm 
+
+```{r}
+rules_1<-apriori(clean_emp)
+rules_1 <- sort (rules_1, by="confidence", decreasing=TRUE)
+inspect(head(rules_1,10))
+plot(rules_1,jitter=0)
+```
+
+
+### Running the algorithm  with testing values for Support and Confidence and displaying the result in the descending order of confidence.
+
+```{r}
+rules_2 <- apriori(clean_emp, parameter = list(supp = 0.5, conf = 0.6, minlen=3))
+rules_2 <- sort(rules_2, by="confidence", decreasing=TRUE)
+inspect(head(rules_2,5))
+```
+
+###Plotting
+
+```{r}
+plot(rules_2,jitter=0)
+```
+
+
+##Output and present the most interesting and significant rules which could predict "Attrition"
+
+
+### Running the algorithm with testing values for Support and Confidence and displaying the result in the descending order of confidence.
+### At the same time, controlling the RHS i.e Attrition output : "Yes", "No"
+
+```{r}
+rules_3 <- apriori(clean_emp, parameter=list (supp=0.4,conf = 0.8, minlen=3), appearance = list (default="lhs",rhs=c("Attrition=Yes","Attrition=No")),control = list(verbose = F))
+rules_3 <- sort (rules_3, by="confidence",decreasing=TRUE)
+inspect(sort(rules_3, by = "lift", decreasing = T))
+
+```
+
+#Interesting rule no.1 
+ 
+## {OverTime=No, WorkLifeBalance=High } => {Attrition=No}                           
+##  Support: 0.4061697, Confidence: 0.9080460, Lift: 1.0769204, Count: 474
+
+##This means that if the worker doesn't work overtime and his work-life balance is high, then the attrition accounts to NO
+
+
+#Interesting rule no.2
+
+## {DistanceFromHome=Near, OverTime=No}  => {Attrition=No}                            ##  Support:0.4661525, Confidence: 0.9036545, Lift = 1.0717122, Count= 544
+
+##This means that if the worker doesn't work overtime and his work-life balance is high, then the attrition accounts to NO
+
+
+
+
+#Plotting
+
+```{r}
+plot(rules_3,jitter=0)
+```
+
+
+#Shiny App
+#LINK
+
+#https://skjain.shinyapps.io/IST_707_ShwetJain/
+
+##xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+##xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+##xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+##xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+##xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+##xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+##xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+##xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+##xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+#End of Assignment 
